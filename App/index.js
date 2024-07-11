@@ -1,52 +1,91 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+// Filename: index.js
+// Combined code from all files
 
-const App = () => {
-  const fullText = 'Hi, this is Apply.\nCreating mobile apps is now as simple as typing text.\nJust input your idea and press APPLY, and our platform does the rest...';
-  const [displayedText, setDisplayedText] = useState('');
-  const [index, setIndex] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
+import React, { useState, useEffect } from 'react';
+import { SafeAreaView, StyleSheet, Text, ScrollView, View, ActivityIndicator } from 'react-native';
+import axios from 'axios';
+
+const ContactList = () => {
+  const [contacts, setContacts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (isPaused) return;
+    fetchContacts();
+  }, []);
 
-    const interval = setInterval(() => {
-      setDisplayedText((prev) => prev + fullText[index]);
-      setIndex((prev) => {
-        if (prev === fullText.length - 1) {
-          setIsPaused(true);
-          setTimeout(() => {
-            setDisplayedText('');
-            setIndex(0);
-            setIsPaused(false);
-          }, 2000);
-          return 0;
-        }
-        return prev + 1;
+  const fetchContacts = async () => {
+    try {
+      const response = await axios.post('http://apihub.p.appply.xyz:3300/chatgpt', {
+        messages: [
+          { role: 'system', content: 'You are a helpful assistant. Please provide answers for given requests.' },
+          { role: 'user', content: 'Generate a list of contacts with names, birthdays and last contacted dates.' }
+        ],
+        model: 'gpt-4o',
       });
-    }, 100);
 
-    return () => clearInterval(interval);
-  }, [index, isPaused]);
+      const data = response.data.response;
+      setContacts(JSON.parse(data));
+      setLoading(false);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  if (loading) {
+    return <ActivityIndicator size="large" color="#0000ff" />;
+  }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.text}>{displayedText}</Text>
+    <View style={styles.contactContainer}>
+      {contacts.map((contact, index) => (
+        <View key={index} style={styles.contactItem}>
+          <Text style={styles.contactName}>{contact.name}</Text>
+          <Text style={styles.contactDetail}>Birthday: {contact.birthday}</Text>
+          <Text style={styles.contactDetail}>Last Contacted: {contact.lastContacted}</Text>
+        </View>
+      ))}
     </View>
   );
 };
 
+const App = () => {
+  return (
+    <SafeAreaView style={styles.container}>
+      <Text style={styles.title}>Network Tracker</Text>
+      <ScrollView>
+        <ContactList />
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    backgroundColor: 'black',
+    marginTop: 20,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginVertical: 20,
+  },
+  contactContainer: {
     padding: 20,
   },
-  text: {
-    color: 'white',
-    fontSize: 24,
-    fontFamily: 'monospace',
+  contactItem: {
+    backgroundColor: '#f9f9f9',
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 10,
+    boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)',
+  },
+  contactName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  contactDetail: {
+    fontSize: 16,
   },
 });
 
